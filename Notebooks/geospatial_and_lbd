@@ -1,0 +1,235 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# SETUP FOR SUPPORTING QUERIES OF IFCOWL GEOMETRIES CONVERTED INTO GEOSPARQL\n",
+    "## Introduction\n",
+    "This notebook tutorial aims to provide the reader with a step-by-step tutorial for converting 
+    ifcOWL IfcStandardWallCase geometries into GeoSPARQL and export them as ifcOWL with
+    added GeoSPARQL and also BOT with GeoSPARQL. You will also learn how to write and 
+    execute some simple GeoSPARQL queries.",
+     "The objectives of the tutorial are as follows:
+     *Show how to use the Jena code base for adding GeoSPARQL to a sample ifcOWL and BOT model.
+      *Demonstrate some simple queries over the resulting data."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Check which python version is currently used by your machine:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "You are using python version: \n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "'3.7.3 | packaged by conda-forge | (default, Mar 27 2019, 23:01:00) \\n[GCC 7.3.0]'"
+      ]
+     },
+     "execution_count": 1,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "import sys\n",
+    "print( \"You are using python version: \")\n",
+    "sys.version"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Verify which packages are installed in your current local environment. This depends on your chosen package manager  and operating system.\n",
+    "\n",
+    "When using conda run:  \n",
+    "```conda list```\n",
+    "\n",
+    "When using pip run:  \n",
+    "```pip freeze```"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Check if your current python environment has the required packages for this tutorial installed:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [
+    {
+     "ename": "ModuleNotFoundError",
+     "evalue": "No module named 'xlrd'",
+     "output_type": "error",
+     "traceback": [
+      "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
+      "\u001b[0;31mModuleNotFoundError\u001b[0m                       Traceback (most recent call last)",
+      "\u001b[0;32m<ipython-input-2-2743bb67f6dd>\u001b[0m in \u001b[0;36m<module>\u001b[0;34m\u001b[0m\n\u001b[0;32m----> 1\u001b[0;31m \u001b[0;32mimport\u001b[0m \u001b[0mxlrd\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m",
+      "\u001b[0;31mModuleNotFoundError\u001b[0m: No module named 'xlrd'"
+     ]
+    }
+   ],
+   "source": [
+    "import xlrd"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import requests"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import rdflib"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "If there is a **ModuleNotFoundError** install the missing module, e.g. for conda (from Jake VanderPlas):"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Collecting package metadata: done\n",
+      "Solving environment: done\n",
+      "\n",
+      "## Package Plan ##\n",
+      "\n",
+      "  environment location: /srv/conda/envs/notebook\n",
+      "\n",
+      "  added / updated specs:\n",
+      "    - xlrd\n",
+      "\n",
+      "\n",
+      "The following packages will be downloaded:\n",
+      "\n",
+      "    package                    |            build\n",
+      "    ---------------------------|-----------------\n",
+      "    xlrd-1.2.0                 |             py_0         108 KB  conda-forge\n",
+      "    ------------------------------------------------------------\n",
+      "                                           Total:         108 KB\n",
+      "\n",
+      "The following NEW packages will be INSTALLED:\n",
+      "\n",
+      "  xlrd               conda-forge/noarch::xlrd-1.2.0-py_0\n",
+      "\n",
+      "\n",
+      "\n",
+      "Downloading and Extracting Packages\n",
+      "xlrd-1.2.0           | 108 KB    | ##################################### | 100% \n",
+      "Preparing transaction: done\n",
+      "Verifying transaction: done\n",
+      "Executing transaction: done\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Install a conda package in the current Jupyter kernel\n",
+    "#!conda install --yes --prefix {sys.prefix} <PACKAGENAME>\n",
+    "\n",
+    "import sys\n",
+    "!conda install --yes --prefix {sys.prefix} xlrd # or rdflib #requests"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Check the current path your are working in"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Your are in path:\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "'/home/jovyan/Notebooks'"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "import os\n",
+    "print( \"Your are in path:\" )\n",
+    "os.getcwd()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
